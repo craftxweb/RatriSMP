@@ -28,35 +28,36 @@ jobs:
           curl -L -o plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
           ls -lh plugins/
 
-      - name: Start Server and Tunnel
+      - name: Start Tunnel
         run: |
-          echo "eula=true" > eula.txt
-
-          # Start Minecraft server in background
-          java -Xmx3G -Xms1G -jar server.jar nogui &
-          SERVER_PID=$!
-
-          # Wait for server to fully start
-          echo "Waiting for server to start..."
-          sleep 90
-
-          # Start tunnel and capture output
           ssh -o StrictHostKeyChecking=no \
               -o ServerAliveInterval=30 \
               -R 25565:localhost:25565 \
-              plan@ssh.localhost.run 2>&1 | while read line; do
-            echo "$line"
-            if echo "$line" | grep -q "localhost.run"; then
-              echo "================================"
-              echo "YOUR SERVER ADDRESS:"
-              echo "$line" | grep -o '[a-zA-Z0-9-]*\.localhost\.run'
-              echo "PORT: 25565"
-              echo "================================"
-            fi
-          done &
+              plan@ssh.localhost.run 2>&1 | tee /tmp/tunnel.log &
+          
+          echo "Waiting for tunnel address..."
+          sleep 25
+          
+          echo "=== FULL TUNNEL LOG ==="
+          cat /tmp/tunnel.log
+          echo "======================="
+          
+          echo "=== YOUR SERVER ADDRESS ==="
+          grep -i "tunneled\|forwarded\|localhost.run\|connect" /tmp/tunnel.log || echo "Still connecting..."
+          echo "==========================="
 
-          sleep 20
-          echo "Tunnel started! Check above for address!"
+      - name: Start Minecraft Server
+        run: |
+          echo "eula=true" > eula.txt
+          java -Xmx3G -Xms1G -jar server.jar nogui
+```
 
-          # Keep server running
-          wait $SERVER_PID
+4. Click **"Commit changes"** ✅
+
+---
+
+## ▶️ Run Again and Send Me:
+
+After running, copy the **entire "Start Tunnel" step logs** and send to me — especially everything after:
+```
+Welcome to localhost.run!
