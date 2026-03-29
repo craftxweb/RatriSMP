@@ -43,8 +43,8 @@ jobs:
           wget -O plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
 
           # LuckPerms
-          wget -O plugins/LuckPerms.jar "https://download.luckperms.net/1515/bukkit/loader/LuckPerms-Bukkit-5.4.113.jar"
-
+         wget -O plugins/LuckPerms.jar "https://download.luckperms.net/1515/bukkit/loader/LuckPerms-Bukkit-5.4.113.jar"
+         
           # GriefPrevention
           wget -O plugins/GriefPrevention.jar "https://github.com/TechFortress/GriefPrevention/releases/download/16.18/GriefPrevention-16.18.jar"
 
