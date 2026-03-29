@@ -1,26 +1,60 @@
 name: Minecraft Server
+
 on:
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Java
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
-      - name: Server
+
+      - name: Start Server
         run: |
-          curl -L -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
+          echo "Downloading Paper..."
+          curl -L -o server.jar https://api.papermc.io/v2/projects/paper/versions/1.21.1/builds/100/downloads/paper-1.21.1-100.jar
+
+          echo "Creating plugins folder..."
           mkdir -p plugins
-          curl -L -o plugins/ViaVersion.jar "https://github.com/ViaVersion/ViaVersion/releases/download/4.9.3/ViaVersion-4.9.3.jar"
-          curl -L -o plugins/EssentialsX.jar "https://github.com/EssentialsX/Essentials/releases/download/2.21.2/EssentialsX-2.21.2.jar"
-          curl -L -o plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
+
+          echo "Downloading plugins..."
+
+          # ViaVersion (join with different versions)
+          curl -L -o plugins/ViaVersion.jar https://github.com/ViaVersion/ViaVersion/releases/latest/download/ViaVersion.jar
+
+          # EssentialsX
+          curl -L -o plugins/EssentialsX.jar https://github.com/EssentialsX/Essentials/releases/latest/download/EssentialsX.jar
+
+          # Vault (required for economy)
+          curl -L -o plugins/Vault.jar https://github.com/MilkBowl/Vault/releases/latest/download/Vault.jar
+
+          # Economy plugin (Economy+)
+          curl -L -o plugins/EconomyPlus.jar https://github.com/ItsLaivy/EconomyPlus/releases/latest/download/EconomyPlus.jar
+
+          # Shop plugin (EconomyShopGUI)
+          curl -L -o plugins/EconomyShopGUI.jar https://github.com/Gypopo/EconomyShopGUI/releases/latest/download/EconomyShopGUI.jar
+
+          echo "Accepting EULA..."
           echo "eula=true" > eula.txt
-          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 25565:localhost:25565 plan@ssh.localhost.run > /tmp/t.log 2>&1 &
-          sleep 20
-          cat /tmp/t.log
+
+          echo "Starting tunnel..."
+          ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o ServerAliveInterval=30 -R 25565:localhost:25565 ssh.localhost.run > tunnel.log 2>&1 &
+
+          echo "Waiting for tunnel..."
+          sleep 25
+
+          echo "====== YOUR SERVER IP ======"
+          cat tunnel.log
+          echo "============================"
+
+          echo "Starting Minecraft server..."
           java -Xmx3G -Xms1G -jar server.jar nogui
