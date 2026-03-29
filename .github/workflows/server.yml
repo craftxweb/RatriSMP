@@ -17,7 +17,6 @@ jobs:
       - name: Download PaperMC
         run: |
           curl -L -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
-          echo "PaperMC downloaded!"
           ls -lh server.jar
 
       - name: Download Plugins
@@ -32,59 +31,34 @@ jobs:
           curl -L -o plugins/GriefPrevention.jar "https://github.com/TechFortress/GriefPrevention/releases/download/16.18/GriefPrevention-16.18.jar"
           curl -L -o plugins/SimpleTPA.jar "https://github.com/LOOHP/SimpleTPA/releases/download/1.0.5/SimpleTPA-1.0.5.jar"
           curl -L -o plugins/OnePlayerSleep.jar "https://github.com/vinceh121/1PlayerSleep/releases/download/2.1.0/1PlayerSleep-2.1.0.jar"
-          echo "All plugins done!"
           ls -lh plugins/
 
-      - name: Start tunnel and server
+      - name: Setup tunnel and Start Server
         run: |
           echo "eula=true" > eula.txt
 
-          # Start Minecraft server in background
+          # Start server in background
           java -Xmx3G -Xms1G -jar server.jar nogui &
           SERVER_PID=$!
 
-          # Wait for server to start
+          # Wait for server to fully start
           echo "Waiting for server to start..."
-          sleep 60
+          sleep 90
 
-          # Start SSH tunnel using localhost.run
+          # Create SSH tunnel
           ssh -o StrictHostKeyChecking=no \
-              -o ServerAliveInterval=60 \
+              -o ServerAliveInterval=30 \
+              -o ConnectTimeout=10 \
               -R 25565:localhost:25565 \
-              plan@ssh.localhost.run 2>&1 | tee /tmp/tunnel.log &
+              plan@ssh.localhost.run > /tmp/tunnel.log 2>&1 &
 
-          sleep 10
+          sleep 15
 
-          echo "=============================="
+          echo "================================"
           echo "YOUR SERVER ADDRESS:"
-          grep -o '[a-z0-9]*\.localhost\.run' /tmp/tunnel.log | head -1
-          echo "Port: 25565"
-          echo "=============================="
+          cat /tmp/tunnel.log | grep -o '[a-zA-Z0-9.-]*localhost\.run' | head -1
+          echo ":25565"
+          echo "================================"
 
-          # Keep server running
+          # Keep alive
           wait $SERVER_PID
-```
-
----
-
-## ▶️ Commit and Run:
-
-1. Click **"Commit changes"** ✅
-2. Click **Actions** tab
-3. Click **"Minecraft Server"**
-4. Click **"Run workflow"** → green button
-5. Wait **3-4 minutes**
-6. Look for:
-```
-==============================
-YOUR SERVER ADDRESS:
-xxxxxxxx.localhost.run
-Port: 25565
-==============================
-```
-
----
-
-## 🎮 Connect Using:
-```
-xxxxxxxx.localhost.run:25565
