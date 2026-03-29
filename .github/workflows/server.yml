@@ -7,15 +7,18 @@ jobs:
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+
       - name: Download PaperMC
         run: |
           curl -L -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
           ls -lh server.jar
+
       - name: Download Plugins
         run: |
           mkdir -p plugins
@@ -24,17 +27,58 @@ jobs:
           curl -L -o plugins/EssentialsXChat.jar "https://github.com/EssentialsX/Essentials/releases/download/2.21.2/EssentialsXChat-2.21.2.jar"
           curl -L -o plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
           ls -lh plugins/
-      - name: Start Tunnel
+
+      - name: Start Tunnel using localhost.run
         run: |
+          # Run tunnel and capture address
           ssh -o StrictHostKeyChecking=no \
               -o ServerAliveInterval=30 \
               -R 25565:localhost:25565 \
-              plan@ssh.localhost.run 2>&1 | tee /tmp/tunnel.log &
-          sleep 25
-          echo "=== FULL TUNNEL LOG ==="
+              plan@ssh.localhost.run > /tmp/tunnel.log 2>&1 &
+          TUNNEL_PID=$!
+          
+          # Wait and keep checking for address
+          for i in $(seq 1 12); do
+            sleep 5
+            ADDRESS=$(grep -o '[0-9a-f]*\.lhr\.life\|[0-9a-f]*\.localhost\.run' /tmp/tunnel.log 2>/dev/null | head -1)
+            if [ -n "$ADDRESS" ]; then
+              echo "========================================"
+              echo "🎮 SERVER IS READY!"
+              echo "📋 ADDRESS: $ADDRESS"
+              echo "🔌 PORT: 25565"
+              echo "👥 SHARE THIS: $ADDRESS:25565"
+              echo "========================================"
+              break
+            fi
+            echo "Waiting for tunnel... ($i/12)"
+          done
+          
+          # Show full log for debugging
+          echo "=== TUNNEL LOG ==="
           cat /tmp/tunnel.log
-          echo "======================="
+          echo "=================="
+
       - name: Start Minecraft Server
         run: |
           echo "eula=true" > eula.txt
           java -Xmx3G -Xms1G -jar server.jar nogui
+```
+
+---
+
+## ▶️ Commit and Run:
+
+1. Click **"Commit changes"** ✅
+2. Click **Actions** tab
+3. Click **"Minecraft Server"**
+4. Click **"Run workflow"** → green button
+5. Click the running job → click **"build"**
+6. Click **"Start Tunnel"** step
+7. Wait and look for:
+```
+========================================
+🎮 SERVER IS READY!
+📋 ADDRESS: abc123.lhr.life
+🔌 PORT: 25565
+👥 SHARE THIS: abc123.lhr.life:25565
+========================================
