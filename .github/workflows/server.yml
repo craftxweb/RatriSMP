@@ -21,6 +21,7 @@ jobs:
         run: |
           curl -L -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
           echo "server.jar downloaded!"
+          ls -lh server.jar
 
       - name: Download Plugins
         run: |
@@ -53,12 +54,14 @@ jobs:
           curl -L -o plugins/OnePlayerSleep.jar "https://github.com/vinceh121/1PlayerSleep/releases/download/2.1.0/1PlayerSleep-2.1.0.jar"
           echo "1PlayerSleep done"
 
-          ls -la plugins/
+          echo "=== All plugins downloaded ==="
+          ls -lh plugins/
 
       - name: Install ngrok
         run: |
           curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz | tar xz
           sudo mv ngrok /usr/local/bin/
+          echo "ngrok installed!"
           ngrok version
 
       - name: Start ngrok tunnel
@@ -67,17 +70,55 @@ jobs:
         run: |
           ngrok authtoken "$NGROK_TOKEN"
           ngrok tcp 25565 --log=stdout > /tmp/ngrok.log 2>&1 &
-          sleep 15
+          echo "Waiting for ngrok to start..."
+          sleep 30
+          echo "=== NGROK LOG ==="
+          cat /tmp/ngrok.log || true
           echo "=== YOUR SERVER ADDRESS ==="
-          curl -s http://localhost:4040/api/tunnels | python3 -c "
+          for i in 1 2 3 4 5; do
+            RESULT=$(curl -s http://localhost:4040/api/tunnels)
+            if [ -n "$RESULT" ]; then
+              echo "$RESULT" | python3 -c "
           import sys, json
           data = json.load(sys.stdin)
-          addr = data['tunnels'][0]['public_url'].replace('tcp://', '')
-          print('SERVER ADDRESS:', addr)
-          print('Give this address to your friends!')
+          tunnels = data.get('tunnels', [])
+          if tunnels:
+              addr = tunnels[0]['public_url'].replace('tcp://', '')
+              print('============================')
+              print('SERVER ADDRESS:', addr)
+              print('Share this with your friends!')
+              print('============================')
+          else:
+              print('No tunnels found yet...')
           "
+              break
+            fi
+            echo "Waiting... attempt $i"
+            sleep 5
+          done
 
-      - name: Accept EULA and Start Server
+      - name: Accept EULA
         run: |
           echo "eula=true" > eula.txt
+          echo "EULA accepted!"
+
+      - name: Start Minecraft Server
+        run: |
+          echo "=== STARTING SERVER ==="
           java -Xmx3G -Xms1G -jar server.jar nogui
+```
+
+5. Click **"Commit changes"** ✅
+
+---
+
+## ▶️ Run Server:
+1. Click **Actions** tab
+2. Click **"server.yml"**
+3. Click **"Run workflow"** → green button
+4. Wait **3-5 minutes**
+5. Look for this in logs:
+```
+============================
+SERVER ADDRESS: 0.tcp.ngrok.io:XXXXX
+============================
