@@ -6,10 +6,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -17,6 +17,7 @@ jobs:
       - name: Download PaperMC
         run: |
           curl -L -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
+          echo "PaperMC downloaded!"
           ls -lh server.jar
 
       - name: Download Plugins
@@ -31,41 +32,59 @@ jobs:
           curl -L -o plugins/GriefPrevention.jar "https://github.com/TechFortress/GriefPrevention/releases/download/16.18/GriefPrevention-16.18.jar"
           curl -L -o plugins/SimpleTPA.jar "https://github.com/LOOHP/SimpleTPA/releases/download/1.0.5/SimpleTPA-1.0.5.jar"
           curl -L -o plugins/OnePlayerSleep.jar "https://github.com/vinceh121/1PlayerSleep/releases/download/2.1.0/1PlayerSleep-2.1.0.jar"
+          echo "All plugins done!"
           ls -lh plugins/
 
-      - name: Install ngrok
-        run: |
-          curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz | tar xz
-          sudo mv ngrok /usr/local/bin/
-          ngrok version
-
-      - name: Start ngrok tunnel
-        env:
-          NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
-        run: |
-          ngrok authtoken "$NGROK_TOKEN"
-          ngrok tcp 25565 > /tmp/ngrok.log 2>&1 &
-          sleep 30
-          for i in 1 2 3 4 5; do
-            RESULT=$(curl -s http://localhost:4040/api/tunnels)
-            if [ -n "$RESULT" ]; then
-              echo "$RESULT" | python3 -c "
-          import sys, json
-          data = json.load(sys.stdin)
-          tunnels = data.get('tunnels', [])
-          if tunnels:
-            addr = tunnels[0]['public_url'].replace('tcp://', '')
-            print('============================')
-            print('SERVER ADDRESS:', addr)
-            print('============================')
-          "
-              break
-            fi
-            echo "Waiting... attempt $i"
-            sleep 5
-          done
-
-      - name: Start Minecraft Server
+      - name: Start tunnel and server
         run: |
           echo "eula=true" > eula.txt
-          java -Xmx3G -Xms1G -jar server.jar nogui
+
+          # Start Minecraft server in background
+          java -Xmx3G -Xms1G -jar server.jar nogui &
+          SERVER_PID=$!
+
+          # Wait for server to start
+          echo "Waiting for server to start..."
+          sleep 60
+
+          # Start SSH tunnel using localhost.run
+          ssh -o StrictHostKeyChecking=no \
+              -o ServerAliveInterval=60 \
+              -R 25565:localhost:25565 \
+              plan@ssh.localhost.run 2>&1 | tee /tmp/tunnel.log &
+
+          sleep 10
+
+          echo "=============================="
+          echo "YOUR SERVER ADDRESS:"
+          grep -o '[a-z0-9]*\.localhost\.run' /tmp/tunnel.log | head -1
+          echo "Port: 25565"
+          echo "=============================="
+
+          # Keep server running
+          wait $SERVER_PID
+```
+
+---
+
+## ▶️ Commit and Run:
+
+1. Click **"Commit changes"** ✅
+2. Click **Actions** tab
+3. Click **"Minecraft Server"**
+4. Click **"Run workflow"** → green button
+5. Wait **3-4 minutes**
+6. Look for:
+```
+==============================
+YOUR SERVER ADDRESS:
+xxxxxxxx.localhost.run
+Port: 25565
+==============================
+```
+
+---
+
+## 🎮 Connect Using:
+```
+xxxxxxxx.localhost.run:25565
