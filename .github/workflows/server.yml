@@ -17,6 +17,46 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Download PaperMC
+        run: |
+          wget -O server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
+          echo "Downloaded server.jar successfully!"
+          ls -la server.jar
+
+      - name: Download Plugins
+        run: |
+          mkdir -p plugins
+
+          # ViaVersion
+          wget -O plugins/ViaVersion.jar "https://github.com/ViaVersion/ViaVersion/releases/download/4.9.2/ViaVersion-4.9.2.jar"
+
+          # ViaBackwards
+          wget -O plugins/ViaBackwards.jar "https://github.com/ViaVersion/ViaBackwards/releases/download/4.9.2/ViaBackwards-4.9.2.jar"
+
+          # EssentialsX
+          wget -O plugins/EssentialsX.jar "https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsX-2.20.1.jar"
+
+          # EssentialsXChat
+          wget -O plugins/EssentialsXChat.jar "https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsXChat-2.20.1.jar"
+
+          # Vault
+          wget -O plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
+
+          # LuckPerms
+          wget -O plugins/LuckPerms.jar "https://download.luckperms.net/1515/bukkit/loader/LuckPerms-Bukkit-5.4.113.jar"
+
+          # GriefPrevention
+          wget -O plugins/GriefPrevention.jar "https://github.com/TechFortress/GriefPrevention/releases/download/16.18/GriefPrevention-16.18.jar"
+
+          # SimpleTPA
+          wget -O plugins/SimpleTPA.jar "https://github.com/LOOHP/SimpleTPA/releases/download/1.0.5/SimpleTPA-1.0.5.jar"
+
+          # 1PlayerSleep
+          wget -O plugins/1PlayerSleep.jar "https://github.com/vinceh121/1PlayerSleep/releases/download/2.1.0/1PlayerSleep-2.1.0.jar"
+
+          echo "All plugins downloaded!"
+          ls -la plugins/
+
       - name: Install playit.gg
         run: |
           curl -SsL https://playit-cloud.github.io/ppa/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/playit-archive-keyring.gpg
@@ -28,8 +68,9 @@ jobs:
         env:
           PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
         run: |
-          playit --secret "$PLAYIT_SECRET" &
-          sleep 10
+          playit --secret "$PLAYIT_SECRET" > /tmp/playit.log 2>&1 &
+          sleep 15
+          cat /tmp/playit.log || true
 
       - name: Start Minecraft Server
         run: |
