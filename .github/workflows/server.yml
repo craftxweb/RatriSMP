@@ -23,21 +23,16 @@ jobs:
         run: |
           mkdir -p plugins
           curl -L -o plugins/ViaVersion.jar "https://github.com/ViaVersion/ViaVersion/releases/download/4.9.3/ViaVersion-4.9.3.jar"
-          curl -L -o plugins/ViaBackwards.jar "https://github.com/ViaVersion/ViaBackwards/releases/download/4.9.3/ViaBackwards-4.9.3.jar"
           curl -L -o plugins/EssentialsX.jar "https://github.com/EssentialsX/Essentials/releases/download/2.21.2/EssentialsX-2.21.2.jar"
           curl -L -o plugins/EssentialsXChat.jar "https://github.com/EssentialsX/Essentials/releases/download/2.21.2/EssentialsXChat-2.21.2.jar"
           curl -L -o plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
-          curl -L -o plugins/LuckPerms.jar "https://download.luckperms.net/1544/bukkit/loader/LuckPerms-Bukkit-5.4.141.jar"
-          curl -L -o plugins/GriefPrevention.jar "https://github.com/TechFortress/GriefPrevention/releases/download/16.18/GriefPrevention-16.18.jar"
-          curl -L -o plugins/SimpleTPA.jar "https://github.com/LOOHP/SimpleTPA/releases/download/1.0.5/SimpleTPA-1.0.5.jar"
-          curl -L -o plugins/OnePlayerSleep.jar "https://github.com/vinceh121/1PlayerSleep/releases/download/2.1.0/1PlayerSleep-2.1.0.jar"
           ls -lh plugins/
 
-      - name: Setup tunnel and Start Server
+      - name: Start Server and Tunnel
         run: |
           echo "eula=true" > eula.txt
 
-          # Start server in background
+          # Start Minecraft server in background
           java -Xmx3G -Xms1G -jar server.jar nogui &
           SERVER_PID=$!
 
@@ -45,20 +40,23 @@ jobs:
           echo "Waiting for server to start..."
           sleep 90
 
-          # Create SSH tunnel
+          # Start tunnel and capture output
           ssh -o StrictHostKeyChecking=no \
               -o ServerAliveInterval=30 \
-              -o ConnectTimeout=10 \
               -R 25565:localhost:25565 \
-              plan@ssh.localhost.run > /tmp/tunnel.log 2>&1 &
+              plan@ssh.localhost.run 2>&1 | while read line; do
+            echo "$line"
+            if echo "$line" | grep -q "localhost.run"; then
+              echo "================================"
+              echo "YOUR SERVER ADDRESS:"
+              echo "$line" | grep -o '[a-zA-Z0-9-]*\.localhost\.run'
+              echo "PORT: 25565"
+              echo "================================"
+            fi
+          done &
 
-          sleep 15
+          sleep 20
+          echo "Tunnel started! Check above for address!"
 
-          echo "================================"
-          echo "YOUR SERVER ADDRESS:"
-          cat /tmp/tunnel.log | grep -o '[a-zA-Z0-9.-]*localhost\.run' | head -1
-          echo ":25565"
-          echo "================================"
-
-          # Keep alive
+          # Keep server running
           wait $SERVER_PID
