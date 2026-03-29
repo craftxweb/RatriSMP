@@ -19,42 +19,41 @@ jobs:
 
       - name: Download PaperMC
         run: |
-          wget -O server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
-          echo "Downloaded server.jar successfully!"
+          curl -L -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
           ls -la server.jar
+          echo "server.jar size: $(du -h server.jar)"
 
       - name: Download Plugins
         run: |
           mkdir -p plugins
 
-          # ViaVersion
-          wget -O plugins/ViaVersion.jar "https://github.com/ViaVersion/ViaVersion/releases/download/4.9.2/ViaVersion-4.9.2.jar"
+          curl -L -o plugins/ViaVersion.jar "https://github.com/ViaVersion/ViaVersion/releases/download/4.9.2/ViaVersion-4.9.2.jar"
+          echo "ViaVersion done"
 
-          # ViaBackwards
-          wget -O plugins/ViaBackwards.jar "https://github.com/ViaVersion/ViaBackwards/releases/download/4.9.2/ViaBackwards-4.9.2.jar"
+          curl -L -o plugins/ViaBackwards.jar "https://github.com/ViaVersion/ViaBackwards/releases/download/4.9.2/ViaBackwards-4.9.2.jar"
+          echo "ViaBackwards done"
 
-          # EssentialsX
-          wget -O plugins/EssentialsX.jar "https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsX-2.20.1.jar"
+          curl -L -o plugins/EssentialsX.jar "https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsX-2.20.1.jar"
+          echo "EssentialsX done"
 
-          # EssentialsXChat
-          wget -O plugins/EssentialsXChat.jar "https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsXChat-2.20.1.jar"
+          curl -L -o plugins/EssentialsXChat.jar "https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsXChat-2.20.1.jar"
+          echo "EssentialsXChat done"
 
-          # Vault
-          wget -O plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
+          curl -L -o plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
+          echo "Vault done"
 
-          # LuckPerms
-         wget -O plugins/LuckPerms.jar "https://download.luckperms.net/1515/bukkit/loader/LuckPerms-Bukkit-5.4.113.jar"
-         
-          # GriefPrevention
-          wget -O plugins/GriefPrevention.jar "https://github.com/TechFortress/GriefPrevention/releases/download/16.18/GriefPrevention-16.18.jar"
+          curl -L -o plugins/LuckPerms.jar "https://download.luckperms.net/1544/bukkit/loader/LuckPerms-Bukkit-5.4.141.jar"
+          echo "LuckPerms done"
 
-          # SimpleTPA
-          wget -O plugins/SimpleTPA.jar "https://github.com/LOOHP/SimpleTPA/releases/download/1.0.5/SimpleTPA-1.0.5.jar"
+          curl -L -o plugins/GriefPrevention.jar "https://github.com/TechFortress/GriefPrevention/releases/download/16.18/GriefPrevention-16.18.jar"
+          echo "GriefPrevention done"
 
-          # 1PlayerSleep
-          wget -O plugins/1PlayerSleep.jar "https://github.com/vinceh121/1PlayerSleep/releases/download/2.1.0/1PlayerSleep-2.1.0.jar"
+          curl -L -o plugins/SimpleTPA.jar "https://github.com/LOOHP/SimpleTPA/releases/download/1.0.5/SimpleTPA-1.0.5.jar"
+          echo "SimpleTPA done"
 
-          echo "All plugins downloaded!"
+          curl -L -o plugins/OnePlayerSleep.jar "https://github.com/vinceh121/1PlayerSleep/releases/download/2.1.0/1PlayerSleep-2.1.0.jar"
+          echo "1PlayerSleep done"
+
           ls -la plugins/
 
       - name: Install playit.gg
@@ -72,6 +71,7 @@ jobs:
           sleep 15
           cat /tmp/playit.log || true
 
-      - name: Start Minecraft Server
+      - name: Accept EULA and Start Minecraft Server
         run: |
+          echo "eula=true" > eula.txt
           java -Xmx3G -Xms1G -jar server.jar nogui
