@@ -20,23 +20,22 @@ jobs:
       - name: Download PaperMC
         run: |
           curl -L -o server.jar "https://api.papermc.io/v2/projects/paper/versions/1.20.4/builds/496/downloads/paper-1.20.4-496.jar"
-          ls -la server.jar
-          echo "server.jar size: $(du -h server.jar)"
+          echo "server.jar downloaded!"
 
       - name: Download Plugins
         run: |
           mkdir -p plugins
 
-          curl -L -o plugins/ViaVersion.jar "https://github.com/ViaVersion/ViaVersion/releases/download/4.9.2/ViaVersion-4.9.2.jar"
+          curl -L -o plugins/ViaVersion.jar "https://github.com/ViaVersion/ViaVersion/releases/download/4.9.3/ViaVersion-4.9.3.jar"
           echo "ViaVersion done"
 
-          curl -L -o plugins/ViaBackwards.jar "https://github.com/ViaVersion/ViaBackwards/releases/download/4.9.2/ViaBackwards-4.9.2.jar"
+          curl -L -o plugins/ViaBackwards.jar "https://github.com/ViaVersion/ViaBackwards/releases/download/4.9.3/ViaBackwards-4.9.3.jar"
           echo "ViaBackwards done"
 
-          curl -L -o plugins/EssentialsX.jar "https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsX-2.20.1.jar"
+          curl -L -o plugins/EssentialsX.jar "https://github.com/EssentialsX/Essentials/releases/download/2.21.2/EssentialsX-2.21.2.jar"
           echo "EssentialsX done"
 
-          curl -L -o plugins/EssentialsXChat.jar "https://github.com/EssentialsX/Essentials/releases/download/2.20.1/EssentialsXChat-2.20.1.jar"
+          curl -L -o plugins/EssentialsXChat.jar "https://github.com/EssentialsX/Essentials/releases/download/2.21.2/EssentialsXChat-2.21.2.jar"
           echo "EssentialsXChat done"
 
           curl -L -o plugins/Vault.jar "https://github.com/MilkBowl/Vault/releases/download/1.7.3/Vault.jar"
@@ -56,22 +55,29 @@ jobs:
 
           ls -la plugins/
 
-      - name: Install playit.gg
+      - name: Install ngrok
         run: |
-          curl -SsL https://playit-cloud.github.io/ppa/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/playit-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/playit-archive-keyring.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
-          sudo apt update
-          sudo apt install playit -y
+          curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz | tar xz
+          sudo mv ngrok /usr/local/bin/
+          ngrok version
 
-      - name: Start playit.gg tunnel
+      - name: Start ngrok tunnel
         env:
-          PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
+          NGROK_TOKEN: ${{ secrets.NGROK_TOKEN }}
         run: |
-          playit --secret "$PLAYIT_SECRET" > /tmp/playit.log 2>&1 &
+          ngrok authtoken "$NGROK_TOKEN"
+          ngrok tcp 25565 --log=stdout > /tmp/ngrok.log 2>&1 &
           sleep 15
-          cat /tmp/playit.log || true
+          echo "=== YOUR SERVER ADDRESS ==="
+          curl -s http://localhost:4040/api/tunnels | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          addr = data['tunnels'][0]['public_url'].replace('tcp://', '')
+          print('SERVER ADDRESS:', addr)
+          print('Give this address to your friends!')
+          "
 
-      - name: Accept EULA and Start Minecraft Server
+      - name: Accept EULA and Start Server
         run: |
           echo "eula=true" > eula.txt
           java -Xmx3G -Xms1G -jar server.jar nogui
