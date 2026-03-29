@@ -28,7 +28,7 @@ jobs:
         env:
           PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
         run: |
-          playit --secret_key "$PLAYIT_SECRET" &
+          playit --secret "$PLAYIT_SECRET" &
           sleep 10
 
       - name: Start Minecraft Server
